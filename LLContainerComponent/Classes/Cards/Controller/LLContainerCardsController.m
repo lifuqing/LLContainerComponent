@@ -16,13 +16,6 @@
 
 #define kTagTableBottomView     1111    //卡片封底视图标记
 
-@interface LLContainerCardsController (BottomPrivate)
-
-- (void)refreshTableBottomView; //刷新封底视图
-
-@end
-
-
 
 @interface LLContainerCardsController ()
 {
@@ -51,6 +44,8 @@
 @property (nonatomic, assign) BOOL               enableExpose;           //是否开启曝光统计
 
 
+///刷新封底视图
+- (void)refreshTableBottomView;
 @end
 
 
@@ -1238,7 +1233,7 @@
 
 #pragma mark - Bottom
 
-@implementation LLContainerCardsController (BottomPrivate)
+@implementation LLContainerCardsController (Bottom)
 
 //设置封底开关
 - (void)setEnableTableBottomView:(BOOL)enableTableBottomView
