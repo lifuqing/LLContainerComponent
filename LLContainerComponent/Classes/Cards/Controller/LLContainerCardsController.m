@@ -12,7 +12,6 @@
 #import <SVPullToRefresh/SVPullToRefresh.h>
 #import <MBProgressHUD/MBProgressHUD.h>
 #import <NSObject+LLTools.h>
-#import "LLErrorView.h"
 
 #define kTagTableBottomView     1111    //卡片封底视图标记
 
@@ -43,8 +42,9 @@
 /*Expose */
 @property (nonatomic, assign) BOOL               enableExpose;           //是否开启曝光统计
 
+@end
 
-///刷新封底视图
+@interface LLContainerCardsController (BottomPrivate)
 - (void)refreshTableBottomView;
 @end
 
@@ -632,9 +632,8 @@
     MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:view animated:YES];
     hud.mode = MBProgressHUDModeText;
     hud.label.text = message;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.3 * NSEC_PER_SEC), dispatch_get_main_queue(), ^(void){
-        [MBProgressHUD hideHUDForView:view animated:YES];
-    });
+    hud.userInteractionEnabled = NO;
+    [hud hideAnimated:YES afterDelay:1];
 }
 
 #pragma mark - Error View
@@ -1259,6 +1258,31 @@
     }
 }
 
+//触发加载更多事件，启动加载动画
+- (void)triggerInfiniteScrollingAction
+{
+    if (_tableView.pullToRefreshView.state != SVPullToRefreshStateLoading) {
+        [_tableView.infiniteScrollingView startAnimating];
+    }
+}
+
+//完成加载更多事件，停止加载动画
+- (void)finishInfiniteScrollingAction
+{
+    [_tableView.infiniteScrollingView stopAnimating];
+}
+
+///完成所有数据加载，设置
+- (void)didFinishLoadAllData{
+    self.enableTableBottomView = YES;
+    LLCardsRefreshType refreshType = self.refreshType & (LLCardsRefreshTypePullToRefresh | LLCardsRefreshTypeLoadingView);
+    self.refreshType = refreshType;
+}
+
+@end
+
+@implementation LLContainerCardsController (BottomPrivate)
+
 //刷新封底视图
 - (void)refreshTableBottomView
 {
@@ -1285,26 +1309,5 @@
     }
 }
 
-//触发加载更多事件，启动加载动画
-- (void)triggerInfiniteScrollingAction
-{
-    if (_tableView.pullToRefreshView.state != SVPullToRefreshStateLoading) {
-        [_tableView.infiniteScrollingView startAnimating];
-    }
-}
-
-//完成加载更多事件，停止加载动画
-- (void)finishInfiniteScrollingAction
-{
-    [_tableView.infiniteScrollingView stopAnimating];
-}
-
-///完成所有数据加载，设置
-- (void)didFinishLoadAllData{
-    self.enableTableBottomView = YES;
-    LLCardsRefreshType refreshType = self.refreshType & (LLCardsRefreshTypePullToRefresh | LLCardsRefreshTypeLoadingView);
-    self.refreshType = refreshType;
-}
 
 @end
-

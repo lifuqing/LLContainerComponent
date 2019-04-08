@@ -1,5 +1,5 @@
 //
-//  LLContainerComponent.m
+//  LLContainerListViewController.m
 //  LLContainerComponent
 //
 //  Created by lifuqing on 2018/9/13.
@@ -11,7 +11,6 @@
 #import "LLBaseTableViewCell.h"
 #import <SVPullToRefresh/SVPullToRefresh.h>
 #import <MBProgressHUD/MBProgressHUD.h>
-#import "LLErrorView.h"
 #import "NSObject+LLTools.h"
 
 @interface LLContainerListViewController () <LLListBaseDataSourceDelegate, UITableViewDelegate, UITableViewDataSource>
@@ -241,9 +240,8 @@
     MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:view animated:YES];
     hud.mode = MBProgressHUDModeText;
     hud.label.text = message;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.3 * NSEC_PER_SEC), dispatch_get_main_queue(), ^(void){
-        [MBProgressHUD hideHUDForView:view animated:YES];
-    });
+    hud.userInteractionEnabled = NO;
+    [hud hideAnimated:YES afterDelay:1];
 }
 
 #pragma mark - Error View
@@ -262,6 +260,7 @@
 - (void)hideErrorView {
     [LLErrorView hideErrorViewInView:self.listTableView];
 }
+
 - (void)showErrorViewWithErrorType:(LLErrorType)errorType selector:(SEL)selector {
     BOOL shouldShowError = YES;
     if ([_listDelegate respondsToSelector:@selector(shouldShowErrorViewAndToastForListController:)]) {

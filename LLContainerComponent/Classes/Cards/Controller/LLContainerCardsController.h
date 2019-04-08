@@ -9,6 +9,7 @@
 #import "LLCardErrorCell.h"
 #import "LLCardTableView.h"
 #import "LLCardController.h"
+#import "LLErrorView.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -148,5 +149,23 @@ typedef NS_ENUM(NSUInteger, LLCardsClearType) {
 
 @end
 
+
+
+@interface LLContainerCardsController (CanRewrite)
+
+#pragma mark - 点击重新加载需要调用的
+//默认点击提示信息事件
+- (void)touchErrorViewAction;
+
+#pragma mark - 重写 hud
+- (void)showMessage:(NSString *)message inView:(UIView *)view;
+
+#pragma mark - 重写 Error View
+
+- (void)hideErrorView;
+- (void)showErrorViewWithErrorType:(LLErrorType)errorType selector:(SEL)selector;
+
+
+@end
 
 NS_ASSUME_NONNULL_END

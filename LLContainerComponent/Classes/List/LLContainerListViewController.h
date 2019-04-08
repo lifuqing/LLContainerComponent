@@ -1,5 +1,5 @@
 //
-//  LLContainerComponent.h
+//  LLContainerListViewController.h
 //  LLContainerComponent
 //
 //  Created by lifuqing on 2018/9/13.
@@ -8,6 +8,7 @@
 #import <UIKit/UIKit.h>
 #import "LLContainerListProtocol.h"
 #import <LLHttpEngine/LLListBaseDataSource.h>
+#import "LLErrorView.h"
 
 @protocol LLContainerListDelegate;
 
@@ -83,3 +84,20 @@ typedef NS_ENUM(NSInteger, ListErrorCode) {
 
 @end
 
+
+@interface LLContainerListViewController (CanRewrite)
+
+#pragma mark - 点击重新加载需要调用的
+//默认点击提示信息事件
+- (void)touchErrorViewAction;
+
+#pragma mark - 重写 hud
+- (void)showMessage:(NSString *)message inView:(UIView *)view;
+
+#pragma mark - 重写 Error View
+
+- (void)hideErrorView;
+- (void)showErrorViewWithErrorType:(LLErrorType)errorType selector:(SEL)selector;
+
+
+@end
