@@ -24,7 +24,6 @@
     else {
         hud.mode = MBProgressHUDModeAnnularDeterminate;
         hud.label.text = @"正在加载";
-        
     }
 }
 ///停止动画

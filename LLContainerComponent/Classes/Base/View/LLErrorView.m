@@ -26,8 +26,9 @@
         _titleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
         _titleLabel.backgroundColor = [UIColor clearColor];
         _titleLabel.textAlignment = NSTextAlignmentCenter;
-        _titleLabel.font = [UIFont systemFontOfSize:14];
+        _titleLabel.font = [UIFont systemFontOfSize:16];
         _titleLabel.textColor = [UIColor grayColor];
+        _titleLabel.autoresizingMask = UIViewAutoresizingFlexibleHeight;
         
         [self addSubview:_titleLabel];
         [self addSubview:_iconView];
@@ -46,7 +47,9 @@
         destView = view;
     }
     [self hideErrorViewInView:destView];
-    LLErrorView *errorView = [[LLErrorView alloc] initWithFrame:CGRectZero];
+    LLErrorView *errorView = [[LLErrorView alloc] initWithFrame:destView.bounds];
+    errorView.center = CGPointMake(destView.bounds.size.width/2.0, destView.bounds.size.height/2.0);
+    errorView.autoresizingMask = UIViewAutoresizingFlexibleHeight;
     [destView addSubview:errorView];
     
     [errorView configErrorInfoWithType:errorType];
@@ -74,16 +77,23 @@
 }
 
 #pragma mark - private
-- (void)hideErrorView {
-    [self removeFromSuperview];
-}
 
-- (BOOL)errorViewIsShow {
-    return self.superview && !self.isHidden;
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    self.titleLabel.frame = CGRectMake(0, 0, CGRectGetWidth(self.bounds), 20);
+    self.titleLabel.center = CGPointMake(self.bounds.size.width/2.0, self.bounds.size.height/2.0);
 }
 
 - (void)configErrorInfoWithType:(LLErrorType)errorType {
-    
+    NSString *errorStr = @"";
+    if (errorType == LLErrorTypeFailed) {
+        errorStr = @"数据加载失败、点击重试";
+    }
+    else if (errorType == LLErrorTypeNoData) {
+        errorStr = @"暂无数据";
+    }
+    self.titleLabel.text = errorStr;
+    [self setNeedsLayout];
 }
 
 #pragma mark - action

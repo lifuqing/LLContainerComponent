@@ -2,7 +2,7 @@
 Pod::Spec.new do |s|
 
   s.name         = "LLContainerComponent"
-  s.version      = "1.0.1"
+  s.version      = "1.0.2"
   s.summary      = "列表框架"
   s.description  = "列表框架"
   s.license      = {:type => 'MIT', :file => 'LICENSE'}
@@ -17,7 +17,7 @@ Pod::Spec.new do |s|
   s.frameworks   = 'Foundation', 'UIKit', 'AVFoundation'
 
   s.dependency 'LLHttpEngine'
-  s.dependency 'SVPullToRefresh'
+  s.dependency 'MJRefresh'
   s.dependency 'MBProgressHUD'
   
 end

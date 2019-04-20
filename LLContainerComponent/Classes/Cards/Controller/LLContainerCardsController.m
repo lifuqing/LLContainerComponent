@@ -9,7 +9,8 @@
 #import "LLLoadingView.h"
 #import "LLCardTableFooterView.h"
 #import <LLHttpEngine/LLHttpEngine.h>
-#import <SVPullToRefresh/SVPullToRefresh.h>
+#import <MJRefresh/MJRefreshNormalHeader.h>
+#import <MJRefresh/MJRefreshAutoNormalFooter.h>
 #import <MBProgressHUD/MBProgressHUD.h>
 #import <NSObject+LLTools.h>
 
@@ -161,29 +162,40 @@
         //下拉刷新
         if (self.isViewLoaded) {
             if (refreshType & LLCardsRefreshTypePullToRefresh) {
-                [self.tableView addPullToRefreshWithActionHandler:^{
+                MJRefreshStateHeader *header = [MJRefreshStateHeader headerWithRefreshingBlock:^{
                     [weakSelf requestCardsIgnoreCenterLoading:YES];
                 }];
+                header.lastUpdatedTimeLabel.hidden = YES;
+                [header setTitle:@"下拉刷新" forState:MJRefreshStateIdle];
+                [header setTitle:@"松开刷新" forState:MJRefreshStatePulling];
+                [header setTitle:@"正在刷新" forState:MJRefreshStateRefreshing];
+                self.tableView.mj_header = header;
             }
             else {
-                [_tableView.pullToRefreshView removeFromSuperview];
+                [_tableView.mj_header removeFromSuperview];
             }
         } else {
-            [_tableView.pullToRefreshView stopAnimating];
+            [_tableView.mj_header endRefreshing];
         }
         
         //上拉加载更多//上拉加载更多控件依赖于表视图加载
         if (self.isViewLoaded) {
             if (refreshType & LLCardsRefreshTypeInfiniteScrolling) {
-                [self.tableView addInfiniteScrollingWithActionHandler:^{
+                MJRefreshAutoNormalFooter *footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
                     [weakSelf requestMoreData];
                 }];
+                
+                [footer setTitle:@"上拉加载" forState:MJRefreshStateIdle];
+                [footer setTitle:@"松开加载" forState:MJRefreshStatePulling];
+                [footer setTitle:@"正在加载" forState:MJRefreshStateRefreshing];
+                [footer setTitle:@"没有更多啦" forState:MJRefreshStateNoMoreData];
+                self.tableView.mj_footer = footer;
             }
             else {
-                [_tableView.infiniteScrollingView removeFromSuperview];
+                [_tableView.mj_footer removeFromSuperview];
             }
         }else {
-            [_tableView.infiniteScrollingView stopAnimating];
+            [_tableView.mj_footer endRefreshing];
         }
         
         //封底视图
@@ -423,11 +435,11 @@
         [_loadingView removeFromSuperview];
     }
     
-    if (_refreshType & LLCardsRefreshTypePullToRefresh && _tableView.pullToRefreshView.state == SVPullToRefreshStateLoading) { //下拉刷新
-        [_tableView.pullToRefreshView stopAnimating];
+    if (_refreshType & LLCardsRefreshTypePullToRefresh && _tableView.mj_header.state == MJRefreshStateRefreshing) { //下拉刷新
+        [_tableView.mj_header endRefreshing];
     }
-    if (_refreshType & LLCardsRefreshTypeInfiniteScrolling && _tableView.infiniteScrollingView.state == SVInfiniteScrollingStateLoading) { //上拉加载更多
-        [_tableView.infiniteScrollingView stopAnimating];
+    if (_refreshType & LLCardsRefreshTypeInfiniteScrolling && _tableView.mj_footer.state == MJRefreshStateRefreshing) { //上拉加载更多
+        [_tableView.mj_footer endRefreshing];
     }
 }
 
@@ -447,7 +459,7 @@
 {
     __weak typeof(self) weakSelf = self;
 
-    void(^successBlock)(NSDictionary *result, LLBaseResponseModel *model, BOOL isLocalCache) = ^(NSDictionary *result, LLBaseResponseModel *model, BOOL isLocalCache) {
+    void(^successBlock)(NSURLResponse * _Nullable response, NSDictionary * _Nullable result, LLBaseResponseModel * _Nonnull model, BOOL isLocalCache) = ^(NSURLResponse * _Nullable response, NSDictionary * _Nullable result, LLBaseResponseModel * _Nonnull model, BOOL isLocalCache) {
         cardController.cardContext.responseError = nil;
         
         if ([result isKindOfClass:[NSDictionary class]]
@@ -463,7 +475,7 @@
         }
     };
     
-    void(^failureBlock)(LLBaseResponseModel *model) = ^(LLBaseResponseModel *model) {
+    void(^failureBlock)(NSURLResponse * _Nonnull response, NSError * _Nullable error,  LLBaseResponseModel * _Nonnull model) = ^(NSURLResponse * _Nonnull response, NSError * _Nullable error,  LLBaseResponseModel * _Nonnull model) {
         cardController.cardContext.responseError = [NSError errorWithDomain:model.errorMsg code:model.errorCode userInfo:nil];
         
         NSError *cardError = [NSError errorWithDomain:@"CardError" code:ELLCardErrorCodeNetwork userInfo:nil];
@@ -643,7 +655,7 @@
     if (_refreshType & LLCardsRefreshTypeLoadingView) {
         [self requestCards];
     } else if (_refreshType & LLCardsRefreshTypePullToRefresh) {
-        [_tableView triggerPullToRefresh];
+        [_tableView.mj_header beginRefreshing];
     } else {
         [self requestCards];
     }
@@ -939,8 +951,8 @@
 {
     CGFloat bottomInset = self.tableView.contentInset.bottom;
     if (self.refreshType & LLCardsRefreshTypeInfiniteScrolling) { //已设置加载更多控件
-        if (self.tableView.infiniteScrollingView) {
-            bottomInset = CGRectGetHeight(self.tableView.infiniteScrollingView.frame);
+        if (self.tableView.mj_footer) {
+            bottomInset = CGRectGetHeight(self.tableView.mj_footer.frame);
         }
         
     }
@@ -1261,15 +1273,15 @@
 //触发加载更多事件，启动加载动画
 - (void)triggerInfiniteScrollingAction
 {
-    if (_tableView.pullToRefreshView.state != SVPullToRefreshStateLoading) {
-        [_tableView.infiniteScrollingView startAnimating];
+    if (_tableView.mj_footer.state != MJRefreshStateRefreshing) {
+        [_tableView.mj_footer beginRefreshing];
     }
 }
 
 //完成加载更多事件，停止加载动画
 - (void)finishInfiniteScrollingAction
 {
-    [_tableView.infiniteScrollingView stopAnimating];
+    [_tableView.mj_footer endRefreshing];
 }
 
 ///完成所有数据加载，设置
