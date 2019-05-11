@@ -459,7 +459,7 @@
 {
     __weak typeof(self) weakSelf = self;
 
-    void(^successBlock)(NSURLResponse * _Nullable response, NSDictionary * _Nullable result, LLBaseResponseModel * _Nonnull model, BOOL isLocalCache) = ^(NSURLResponse * _Nullable response, NSDictionary * _Nullable result, LLBaseResponseModel * _Nonnull model, BOOL isLocalCache) {
+    void(^successBlock)(NSURLResponse * _Nullable response, NSDictionary * _Nullable result, LLBaseResponseModel * _Nullable model, BOOL isLocalCache) = ^(NSURLResponse * _Nullable response, NSDictionary * _Nullable result, LLBaseResponseModel * _Nullable model, BOOL isLocalCache) {
         cardController.cardContext.responseError = nil;
         
         if ([result isKindOfClass:[NSDictionary class]]
@@ -475,7 +475,7 @@
         }
     };
     
-    void(^failureBlock)(NSURLResponse * _Nonnull response, NSError * _Nullable error,  LLBaseResponseModel * _Nonnull model) = ^(NSURLResponse * _Nonnull response, NSError * _Nullable error,  LLBaseResponseModel * _Nonnull model) {
+    void(^failureBlock)(NSURLResponse * _Nullable response, NSError * _Nullable error,  LLBaseResponseModel * _Nullable model) = ^(NSURLResponse * _Nullable response, NSError * _Nullable error,  LLBaseResponseModel * _Nullable model) {
         cardController.cardContext.responseError = [NSError errorWithDomain:model.errorMsg code:model.errorCode userInfo:nil];
         
         NSError *cardError = [NSError errorWithDomain:@"CardError" code:ELLCardErrorCodeNetwork userInfo:nil];

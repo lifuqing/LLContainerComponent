@@ -60,6 +60,9 @@ typedef NS_ENUM(NSInteger, ListErrorCode) {
 ///列表数据源
 @property (nonatomic, strong, readonly) NSMutableArray *listArray;
 
+///创建之后外部需要额外设置属性的时候调用
+- (void)extraConfigTableView;
+
 @end
 
 

@@ -59,6 +59,8 @@
     
     [self.view addSubview:self.listTableView];
     
+    [self extraConfigTableView];
+    
     self.refreshType = ListRefreshTypeLoadingView | ListRefreshTypePullToRefresh;
 }
 
@@ -162,6 +164,11 @@
     [self refreshLayoutViews];
     //曝光
     [self exposeStatistics];
+}
+
+///创建之后外部需要额外设置属性的时候调用
+- (void)extraConfigTableView {
+    
 }
 
 ///刷新视图frame
