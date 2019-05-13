@@ -143,9 +143,7 @@
                              value:[UIFont systemFontOfSize:14.0]
                              range:NSMakeRange(0, errorMessage.length)];
         
-        [self showErrorAttributedMessage:errorMessage
-                        target:_cardController
-                      selector:@selector(requestErrorCardData)];
+        [self showErrorAttributedMessage:errorMessage];
     } else {
         [self hideErrorView];
     }
@@ -167,17 +165,16 @@
     [self.errorView removeFromSuperview];
 }
 
-- (void)showErrorAttributedMessage:(NSMutableAttributedString *)message target:(id)target selector:(SEL)selector {
+- (void)showErrorAttributedMessage:(NSMutableAttributedString *)message {
     if (![[self.contentView subviews] containsObject:_errorView]) {
         [self.contentView addSubview:self.errorView];
     }
     self.errorView.errorMessage = message;
     
-    if ([target respondsToSelector:selector] && self.cardController.cardContext.error.code != ELLCardErrorCodeNoData) {
+    __weak __typeof(&*self) weakSelf = self;
+    if (self.cardController.cardContext.error.code != ELLCardErrorCodeNoData) {
         self.errorView.clickBlock = ^{
-            IMP imp = [target methodForSelector:selector];
-            void (*func)(id, SEL) = (void *)imp;
-            func(target, selector);
+            [weakSelf clickErrorView];
         };
     }
     else {
@@ -185,6 +182,14 @@
     }
 }
 
+#pragma mark - action
+- (void)clickErrorView {
+    if ([_cardController respondsToSelector:@selector(requestErrorCardData)]) {
+        [_cardController requestErrorCardData];
+    }
+}
+
+#pragma mark - lazyloading
 - (LLCardLoadingView *)loadingView {
     if (!_loadingView) {
         _loadingView = [[LLCardLoadingView alloc] initWithFrame:self.bounds]; //给定足够大的尺寸

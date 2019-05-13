@@ -205,6 +205,29 @@
     }
 }
 
+//设置封底开关
+- (void)setEnableTableBottomView:(BOOL)enableTableBottomView
+{
+    if (_enableTableBottomView != enableTableBottomView) {
+        _enableTableBottomView = enableTableBottomView;
+        
+        if (self.isViewLoaded) {
+            [self refreshTableBottomView];
+        }
+    }
+}
+
+//设置封底自定义视图
+- (void)setTableBottomCustomView:(UIView *)tableBottomCustomView
+{
+    if (_tableBottomCustomView != tableBottomCustomView) {
+        _tableBottomCustomView = tableBottomCustomView;
+        
+        if (self.isViewLoaded) {
+            [self refreshTableBottomView];
+        }
+    }
+}
 
 #pragma mark - Private Methods
 
@@ -367,6 +390,14 @@
         && cardsArray.count
         && [_cardsArray isEqualToArray:cardsArray]) { //数据未变更
         return;
+    }
+    
+    //清空缓存
+    if (_clearType == LLCardsClearTypeAfterRequest) {
+        //初始化监听可能调用了UI刷新和数据请求，若请求前没有清除数据源，需要保证回调前清空缓存
+        [_cardsArray removeAllObjects];
+        [_cardControllersArray removeAllObjects];
+        [_tableView reloadData];
     }
     
     //解析数据源
@@ -1245,30 +1276,6 @@
 #pragma mark - Bottom
 
 @implementation LLContainerCardsController (Bottom)
-
-//设置封底开关
-- (void)setEnableTableBottomView:(BOOL)enableTableBottomView
-{
-    if (_enableTableBottomView != enableTableBottomView) {
-        _enableTableBottomView = enableTableBottomView;
-        
-        if (self.isViewLoaded) {
-            [self refreshTableBottomView];
-        }
-    }
-}
-
-//设置封底自定义视图
-- (void)setTableBottomCustomView:(UIView *)tableBottomCustomView
-{
-    if (_tableBottomCustomView != tableBottomCustomView) {
-        _tableBottomCustomView = tableBottomCustomView;
-        
-        if (self.isViewLoaded) {
-            [self refreshTableBottomView];
-        }
-    }
-}
 
 //触发加载更多事件，启动加载动画
 - (void)triggerInfiniteScrollingAction
