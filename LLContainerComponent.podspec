@@ -2,7 +2,7 @@
 Pod::Spec.new do |s|
 
   s.name         = "LLContainerComponent"
-  s.version      = "1.0.3"
+  s.version      = "1.0.4"
   s.summary      = "列表框架"
   s.description  = "列表框架"
   s.license      = {:type => 'MIT', :file => 'LICENSE'}
