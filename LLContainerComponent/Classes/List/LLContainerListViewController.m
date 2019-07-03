@@ -9,8 +9,6 @@
 #import <LLHttpEngine/LLListBaseDataSource.h>
 #import "LLLoadingView.h"
 #import "LLBaseTableViewCell.h"
-#import <MJRefresh/MJRefreshNormalHeader.h>
-#import <MJRefresh/MJRefreshAutoNormalFooter.h>
 #import <MBProgressHUD/MBProgressHUD.h>
 #import "NSObject+LLTools.h"
 
@@ -23,6 +21,10 @@
 @property (nonatomic, assign) ListClearType clearType;
 ///使用默认错误提示，默认YES
 @property (nonatomic, assign) BOOL enableNetworkError;
+///使用没有更多啦封底，默认NO
+@property (nonatomic, assign) BOOL enableTableBottomView;
+///是否支持预加载更多数据，默认NO
+@property (nonatomic, assign) BOOL enablePreLoad;
 ///loading
 @property (nonatomic, strong) LLLoadingView *loadingView;
 
@@ -138,27 +140,54 @@
         [self.listDataSource loadMore];
     }
     else {
-        [_listTableView.mj_footer endRefreshing];
-        [self showMessage:@"没有更多数据啦~" inView:self.view];
+        if (self.enableTableBottomView) {
+            [_listTableView.pullToLoadMoreView stopAnimatingWithNoMoreData];
+        }
+        else {
+            //需要放到[_listTableView.pullToLoadMoreView stopAnimating];之前，否则状态会错
+            if (self.listTableView.pullToLoadMoreView.previousState != YLPullToLoadMoreStatePreLoadTriggered) {
+                [self showMessage:@"没有更多数据啦~" inView:self.view];
+                //如果没有更多数据的时候不支持上拉了就加上下面这句话，但是给用户的感知是不知道没有更多啦。请先不要删除
+//                // 与|=配对，比较靠谱 用^=有风险 0^=1就有问题了
+//                self.refreshType &= ~ListRefreshTypeInfiniteScrolling;
+            }
+            [_listTableView.pullToLoadMoreView stopAnimating];
+        }
     }
 }
 
 ///请求完成后的处理
 - (void)handleRequestFinish {
     if (self.listDataSource.error) {
-        [self requestListDataFailedWithError:[NSError errorWithDomain:self.listDataSource.error.domain code:ListErrorCodeFailed userInfo:nil]];
+        if (self.refreshType & ListRefreshTypeInfiniteScrolling) {
+            // 与|=配对，比较靠谱 用^=有风险 0^=1就有问题了
+            self.refreshType &= ~ListRefreshTypeInfiniteScrolling;
+        }
+        [self requestListDataFailedWithError:[NSError errorWithDomain:self.listDataSource.error.domain code:ListErrorCodeFailed userInfo:nil] requestType:self.listDataSource.llurl.curRequestType];
     }
     else {
-        [self requestListDataSuccessWithArray:self.listDataSource.list];
         if (self.listDataSource.list.count > 0) {
             if (self.listDataSource.hasMore) {
-                self.refreshType |= ListRefreshTypeInfiniteScrolling;
+                if (!(self.refreshType & ListRefreshTypeInfiniteScrolling)) {
+                    self.refreshType |= ListRefreshTypeInfiniteScrolling;
+                }
             }
             else {
+                if (self.listDataSource.llurl.curRequestType == LLRequestTypeRefresh) {
+                    if (self.refreshType & ListRefreshTypeInfiniteScrolling) {
+                        // 与|=配对，比较靠谱 用^=有风险 0^=1就有问题了
+                        self.refreshType &= ~ListRefreshTypeInfiniteScrolling;
+                    }
+                }
+            }
+        }
+        else {
+            if (self.refreshType & ListRefreshTypeInfiniteScrolling) {
                 // 与|=配对，比较靠谱 用^=有风险 0^=1就有问题了
                 self.refreshType &= ~ListRefreshTypeInfiniteScrolling;
             }
         }
+        [self requestListDataSuccessWithArray:self.listDataSource.list];
     }
     
     [self refreshLayoutViews];
@@ -221,6 +250,25 @@
         }
     }
 }
+
+///请求列表失败,包括下拉刷新和加载更多
+- (void)requestListDataFailedWithError:(NSError *)error requestType:(LLRequestType)requestType {
+    if (requestType == LLRequestTypeRefresh) {
+        [self requestListDataFailedWithError:error];
+    }
+    else {
+        //显示错误提示视图，previousState的使用需要放到endRefresh之前
+        if (_enableNetworkError && self.listTableView.pullToLoadMoreView.previousState != YLPullToLoadMoreStatePreLoadTriggered) {
+            if (error.code == ListErrorCodeFailed) { //数据错误
+                [self showMessage:error.domain inView:self.view];
+            } else if (error.code == ListErrorCodeNetwork) { //网络错误
+                [self showMessage:error.domain inView:self.view];
+            }
+        }
+        [self endRefresh];
+    }
+}
+
 #pragma mark - HUD
 - (void)showMessage:(NSString *)message inView:(UIView *)view {
     MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:view animated:YES];
@@ -237,7 +285,10 @@
     if (_refreshType & ListRefreshTypeLoadingView) {
         [self requestData];
     } else if (_refreshType & ListRefreshTypePullToRefresh) {
-        [_listTableView.mj_header beginRefreshing];
+        if (_enableNetworkError) {
+            [self hideErrorView];
+        }
+        [_listTableView triggerPullToRefresh];
     } else {
         [self requestData];
     }
@@ -271,11 +322,22 @@
         [_loadingView removeFromSuperview];
     }
     
-    if (_refreshType & ListRefreshTypePullToRefresh && _listTableView.mj_header.state == MJRefreshStateRefreshing) { //下拉刷新
-        [_listTableView.mj_header endRefreshing];
+    if (_refreshType & ListRefreshTypePullToRefresh && _listTableView.pullToRefreshView.state == YLPullToRefreshStateLoading) { //下拉刷新
+        [_listTableView.pullToRefreshView stopAnimating];
     }
-    if (_refreshType & ListRefreshTypeInfiniteScrolling && _listTableView.mj_footer.state == MJRefreshStateRefreshing) { //上拉加载更多
-        [_listTableView.mj_footer endRefreshing];
+    
+    if (_refreshType & ListRefreshTypeInfiniteScrolling && _listTableView.pullToLoadMoreView.state == YLPullToLoadMoreStateLoading) { //上拉加载更多
+        if (self.listDataSource.hasMore) {
+            [_listTableView.pullToLoadMoreView stopAnimating];
+        }
+        else {
+            if (self.enableTableBottomView) {
+                [_listTableView.pullToLoadMoreView stopAnimatingWithNoMoreData];
+            }
+            else {
+                [_listTableView.pullToLoadMoreView stopAnimating];
+            }
+        }
     }
 }
 
@@ -291,46 +353,33 @@
         //下拉刷新
         if (self.isViewLoaded) {
             if (refreshType & ListRefreshTypePullToRefresh) {
-                MJRefreshStateHeader *header = [MJRefreshStateHeader headerWithRefreshingBlock:^{
+                [self.listTableView addPullToRefreshWithActionHandler:^{
                     [weakSelf requestDataIgnoreCenterLoading:YES];
                     if ([weakSelf.eventDelegate respondsToSelector:@selector(eventPullRefreshForListController:)]) {
                         [weakSelf.eventDelegate eventPullRefreshForListController:weakSelf];
                     }
                 }];
-                header.lastUpdatedTimeLabel.hidden = YES;
-                [header setTitle:@"下拉刷新" forState:MJRefreshStateIdle];
-                [header setTitle:@"松开刷新" forState:MJRefreshStatePulling];
-                [header setTitle:@"正在刷新" forState:MJRefreshStateRefreshing];
-                self.listTableView.mj_header = header;
-                
             }
             else {
-                [_listTableView.mj_header removeFromSuperview];
+                _listTableView.showsPullToRefresh = NO;
             }
         } else {
-            [_listTableView.mj_header endRefreshing];
+            [_listTableView.pullToRefreshView stopAnimating];
         }
         
         //上拉加载更多
         if (self.isViewLoaded) {
             if (refreshType & ListRefreshTypeInfiniteScrolling) {
-                MJRefreshAutoNormalFooter *footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
+                [self.listTableView addPullToLoadMoreWithActionHandler:^{
                     [weakSelf requestMoreListData];
                 }];
-                
-                [footer setTitle:@"上拉加载" forState:MJRefreshStateIdle];
-                [footer setTitle:@"松开加载" forState:MJRefreshStatePulling];
-                [footer setTitle:@"正在加载" forState:MJRefreshStateRefreshing];
-                [footer setTitle:@"没有更多啦" forState:MJRefreshStateNoMoreData];
-                
-                self.listTableView.mj_footer = footer;
-                
+                _listTableView.showsPullToLoadMore = YES;
+                _listTableView.pullToLoadMoreView.preLoad = self.enablePreLoad;
+            } else {
+                _listTableView.showsPullToLoadMore = NO;
             }
-            else {
-                [_listTableView.mj_footer removeFromSuperview];
-            }
-        }else {
-            [_listTableView.mj_footer endRefreshing];
+        } else {
+            [_listTableView.pullToLoadMoreView stopAnimating];
         }
     }
 }
@@ -537,9 +586,7 @@
 {
     CGFloat bottomInset = self.listTableView.contentInset.bottom;
     if (self.refreshType & ListRefreshTypeInfiniteScrolling) { //已设置加载更多控件
-        if (self.listTableView.mj_footer) {
-            bottomInset = CGRectGetHeight(self.listTableView.mj_footer.frame);
-        }
+        bottomInset = self.listTableView.pullToLoadMoreView.originalBottomInset;
     }
     return CGRectMake(0, self.listTableView.contentOffset.y + self.listTableView.contentInset.top, self.listTableView.frame.size.width, self.listTableView.frame.size.height - self.listTableView.contentInset.top - bottomInset);
 }

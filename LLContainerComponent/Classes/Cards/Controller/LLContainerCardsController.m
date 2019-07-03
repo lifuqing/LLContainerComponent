@@ -9,10 +9,9 @@
 #import "LLLoadingView.h"
 #import "LLCardTableFooterView.h"
 #import <LLHttpEngine/LLHttpEngine.h>
-#import <MJRefresh/MJRefreshNormalHeader.h>
-#import <MJRefresh/MJRefreshAutoNormalFooter.h>
 #import <MBProgressHUD/MBProgressHUD.h>
 #import <NSObject+LLTools.h>
+#import <YLPullToRefresh/YLPullToRefresh.h>
 
 #define kTagTableBottomView     1111    //卡片封底视图标记
 
@@ -162,40 +161,29 @@
         //下拉刷新
         if (self.isViewLoaded) {
             if (refreshType & LLCardsRefreshTypePullToRefresh) {
-                MJRefreshStateHeader *header = [MJRefreshStateHeader headerWithRefreshingBlock:^{
+                [self.tableView addPullToRefreshWithActionHandler:^{
                     [weakSelf requestCardsIgnoreCenterLoading:YES];
                 }];
-                header.lastUpdatedTimeLabel.hidden = YES;
-                [header setTitle:@"下拉刷新" forState:MJRefreshStateIdle];
-                [header setTitle:@"松开刷新" forState:MJRefreshStatePulling];
-                [header setTitle:@"正在刷新" forState:MJRefreshStateRefreshing];
-                self.tableView.mj_header = header;
             }
             else {
-                [_tableView.mj_header removeFromSuperview];
+                _tableView.showsPullToRefresh = NO;
             }
         } else {
-            [_tableView.mj_header endRefreshing];
+            [_tableView.pullToRefreshView stopAnimating];
         }
         
         //上拉加载更多//上拉加载更多控件依赖于表视图加载
         if (self.isViewLoaded) {
             if (refreshType & LLCardsRefreshTypeInfiniteScrolling) {
-                MJRefreshAutoNormalFooter *footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
+                [self.tableView addPullToLoadMoreWithActionHandler:^{
                     [weakSelf requestMoreData];
                 }];
-                
-                [footer setTitle:@"上拉加载" forState:MJRefreshStateIdle];
-                [footer setTitle:@"松开加载" forState:MJRefreshStatePulling];
-                [footer setTitle:@"正在加载" forState:MJRefreshStateRefreshing];
-                [footer setTitle:@"没有更多啦" forState:MJRefreshStateNoMoreData];
-                self.tableView.mj_footer = footer;
             }
             else {
-                [_tableView.mj_footer removeFromSuperview];
+                _tableView.showsPullToLoadMore = NO;
             }
         }else {
-            [_tableView.mj_footer endRefreshing];
+            [_tableView.pullToLoadMoreView stopAnimating];
         }
         
         //封底视图
@@ -466,11 +454,11 @@
         [_loadingView removeFromSuperview];
     }
     
-    if (_refreshType & LLCardsRefreshTypePullToRefresh && _tableView.mj_header.state == MJRefreshStateRefreshing) { //下拉刷新
-        [_tableView.mj_header endRefreshing];
+    if (_refreshType & LLCardsRefreshTypePullToRefresh && _tableView.pullToRefreshView.state == YLPullToRefreshStateLoading) { //下拉刷新
+        [_tableView.pullToRefreshView stopAnimating];
     }
-    if (_refreshType & LLCardsRefreshTypeInfiniteScrolling && _tableView.mj_footer.state == MJRefreshStateRefreshing) { //上拉加载更多
-        [_tableView.mj_footer endRefreshing];
+    if (_refreshType & LLCardsRefreshTypeInfiniteScrolling && _tableView.pullToLoadMoreView.state == YLPullToLoadMoreStateLoading) { //上拉加载更多
+        [_tableView.pullToLoadMoreView stopAnimating];
     }
 }
 
@@ -686,7 +674,7 @@
     if (_refreshType & LLCardsRefreshTypeLoadingView) {
         [self requestCards];
     } else if (_refreshType & LLCardsRefreshTypePullToRefresh) {
-        [_tableView.mj_header beginRefreshing];
+        [_tableView triggerPullToRefresh];
     } else {
         [self requestCards];
     }
@@ -982,9 +970,7 @@
 {
     CGFloat bottomInset = self.tableView.contentInset.bottom;
     if (self.refreshType & LLCardsRefreshTypeInfiniteScrolling) { //已设置加载更多控件
-        if (self.tableView.mj_footer) {
-            bottomInset = CGRectGetHeight(self.tableView.mj_footer.frame);
-        }
+        bottomInset = self.tableView.pullToLoadMoreView.originalBottomInset;
         
     }
     return CGRectMake(0, self.tableView.contentOffset.y + self.tableView.contentInset.top, self.tableView.frame.size.width, self.tableView.frame.size.height - self.tableView.contentInset.top - bottomInset);
@@ -1280,15 +1266,15 @@
 //触发加载更多事件，启动加载动画
 - (void)triggerInfiniteScrollingAction
 {
-    if (_tableView.mj_footer.state != MJRefreshStateRefreshing) {
-        [_tableView.mj_footer beginRefreshing];
+    if (_tableView.pullToRefreshView.state != YLPullToRefreshStateLoading) {
+        [_tableView triggerPullToLoadMore];
     }
 }
 
 //完成加载更多事件，停止加载动画
 - (void)finishInfiniteScrollingAction
 {
-    [_tableView.mj_footer endRefreshing];
+    [_tableView.pullToLoadMoreView stopAnimating];
 }
 
 ///完成所有数据加载，设置

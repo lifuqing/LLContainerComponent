@@ -9,6 +9,7 @@
 #import "LLContainerListProtocol.h"
 #import <LLHttpEngine/LLListBaseDataSource.h>
 #import "LLErrorView.h"
+#import <YLPullToRefresh/YLPullToRefresh.h>
 
 @protocol LLContainerListDelegate;
 
@@ -74,6 +75,10 @@ typedef NS_ENUM(NSInteger, ListErrorCode) {
 @property (nonatomic, assign) ListClearType clearType;
 ///使用默认错误提示，默认YES
 @property (nonatomic, assign) BOOL enableNetworkError;
+///使用没有更多啦封底，默认NO
+@property (nonatomic, assign) BOOL enableTableBottomView;
+///是否支持预加载更多数据，默认NO
+@property (nonatomic, assign) BOOL enablePreLoad;
 
 
 ///请求全部数据，包括筛选条件和列表，如果筛选条件已经请求成功则只请求列表

@@ -6,5 +6,5 @@ inhibit_all_warnings!
 target 'LLContainerComponent' do
     pod 'LLHttpEngine'
     pod 'MBProgressHUD'
-    pod 'MJRefresh'
+    pod 'YLPullToRefresh'
 end

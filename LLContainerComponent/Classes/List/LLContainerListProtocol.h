@@ -9,6 +9,8 @@
 #import <UIKit/UIKit.h>
 #import <LLHttpEngine/LLURL.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 /**
  beta 版本，有任何需求不满足、或者用着不方便的，联系@lifuqing
  */
@@ -121,9 +123,12 @@
 - (void)exposeListSendExposeStatisticsWithData:(nullable NSArray<LLBaseResponseModel *> *)exposeDataArray;
 
 ///是否应该发送曝光,默认YES
-- (BOOL)exposeShouldExposeAtIndexPath:(NSIndexPath *)indexPath forListController:(nonnull LLContainerListViewController *)listController;
+- (BOOL)exposeShouldExposeAtIndexPath:(nonnull NSIndexPath *)indexPath forListController:(nonnull LLContainerListViewController *)listController;
 
 ///列表数据，如果cell继承自LLBaseTableViewCell并且使用里面的model属性作为数据源，则无需实现此解析。否则请根据indexpath解析曝光数据源，遍历之后将数据源LLBaseResponseModel类型的属性ll_exposed设置为YES。之后会自动调用exposeListSendExposeStatisticsWithData:上报.具体解析方法可参考parseExposeArrayWithIndexPath:
 - (nullable NSArray *)exposeListParseExposeArrayWithIndexPath:(nullable NSArray<NSIndexPath *> *)exposeArray;
 
 @end
+
+
+NS_ASSUME_NONNULL_END
