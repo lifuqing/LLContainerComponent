@@ -89,8 +89,14 @@
     if (errorType == LLErrorTypeFailed) {
         errorStr = @"数据加载失败、点击重试";
     }
+    else if (errorType == LLErrorTypeNoNetwork) {
+        errorStr = @"数据加载失败、点击重试";
+    }
     else if (errorType == LLErrorTypeNoData) {
         errorStr = @"暂无数据";
+    }
+    else {
+        errorStr = @"数据加载失败、点击重试";
     }
     self.titleLabel.text = errorStr;
     [self setNeedsLayout];
